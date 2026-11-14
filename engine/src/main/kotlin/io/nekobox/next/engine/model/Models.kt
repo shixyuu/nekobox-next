@@ -92,22 +92,6 @@ data class ShadowsocksSpec(
 ) : NodeSpec
 
 @Serializable
-@SerialName("hysteria2")
-data class Hysteria2Spec(
-    val server: String = "",
-    val serverPort: Int = 443,
-    val password: String = "",
-    val serverName: String = "",
-    val insecure: Boolean = false,
-    val alpn: String = "",
-    val obfs: String = "",
-    val obfsPassword: String = "",
-    val upMbps: Int = 0,
-    val downMbps: Int = 0,
-    override val detourNodeId: String? = null,
-) : NodeSpec
-
-@Serializable
 @SerialName("hysteria")
 data class HysteriaSpec(
     val server: String = "",

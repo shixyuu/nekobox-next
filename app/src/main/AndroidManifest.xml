@@ -41,6 +41,7 @@
                 <data android:scheme="trojan" />
                 <data android:scheme="hysteria2" />
                 <data android:scheme="hy2" />
+                <data android:scheme="realm" />
                 <data android:scheme="tuic" />
                 <data android:scheme="anytls" />
             </intent-filter>

@@ -2,6 +2,10 @@
 
 PHASE 1 已经能生成配置、解析订阅、开关 VPN，并跑通本地 ByeDPI。下面按优先级排列还没对齐 NekoBox 1.4.2 的部分。每一项都写清缺的是哪一层。
 
+## 已完成（在 PHASE 1 之上）
+
+- **Hysteria2 节点编辑页，对齐 sing-box 1.14.4 出站。** 直连服务器和 Realm 打洞两种模式，端口跳跃、混淆（salamander / gecko）、带宽与 BBR、TLS、QUIC、拨号字段都在界面里，并在保存时校验。分享链接覆盖 `hysteria2://`、`hy2://`，以及官方 `realm://` / `realm+http://`。Clash Meta 的 hysteria2 字段会映射进来。旧版 NekoBox 没有这套表单。
+
 ## P0：没有这些，日常使用不完整
 
 1. **在 CI 和本机打出 `nekocore.aar` 并完成一次真机握手。** 绑定代码在 `core/mobile`，脚本在 `scripts/build-core.sh`。缺 Go 1.25.5、NDK 或 sing-box 模块下载时，调试包只会占住 TUN。要对着 `sing-box check` 把生成的 JSON 再跑一遍，确认 1.14 的 DNS / clash_api 字段没有改名。
@@ -19,7 +23,7 @@ PHASE 1 已经能生成配置、解析订阅、开关 VPN，并跑通本地 ByeD
 
 ## P2：协议与订阅
 
-10. **ShadowTLS、Hysteria 1 的完整传输、Naive、SSH 私钥文件、WireGuard reserved 的表单校验。** 生成器里 Hysteria、AnyTLS、SSH、WireGuard 已有基本字段，编辑页是按 JSON 键铺的，缺协议专用校验和分享链接往返测试补全。
+10. **ShadowTLS、Hysteria 1 的完整传输、Naive、SSH 私钥文件、WireGuard reserved 的表单校验。** Hysteria2 编辑页已经按 1.14.4 出站做完。生成器里 Hysteria 1、AnyTLS、SSH、WireGuard 仍是基本字段，编辑页按 JSON 键铺开，缺协议专用校验和分享链接往返测试补全。
 11. **传输层。** VLESS / VMess / Trojan 会写出 ws、grpc、http、httpupgrade。还缺 xhttp、splithttp、reality 的 spiderX / 短 ID 列表、uTLS 指纹列表。
 12. **订阅。** 已解析 Clash proxies、Base64 分享链接、sing-box outbounds、SIP008、WireGuard INI。还缺：只更新节点不碰手写节点的冲突策略（现在按 `subscriptionId` 整组替换）、ETag、自定义 User-Agent 的设置页、解析警告列表。
 13. **链式代理的多跳。** 一跳 `detour` 已生成。多跳和「落地组」还没有。

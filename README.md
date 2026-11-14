@@ -53,12 +53,12 @@ Kotlin 使用 2.4.21。AGP 9 自带 Kotlin 插件，应用模块不再单独应�
 
 - 首页：未连接 / 连接中 / 已连接，约 250dp 的 Sunny → 连接中 ContainedLoadingIndicator → Flower 加对勾，速度，当前节点胶囊和节点选择表。
 - 节点：分组 ButtonGroup、协议形状头像、FloatingToolbar（测速 SplitButton、排序、更新订阅）、FAB 菜单（手动添加、剪贴板、扫码粘贴、文件导入）、分组与订阅页。
-- 一个节点编辑页，顶部切换协议，表单来自模型字段。ByeDPI 有轻度 tlsrec、分段、乱序、假包和自定义参数。
+- 一个节点编辑页，顶部切换协议，表单来自模型字段。ByeDPI 有轻度 tlsrec、分段、乱序、假包和自定义参数。Hysteria2 是按 sing-box 1.14.4 出站做的完整表单：直连或 Realm 打洞、端口跳跃、salamander / gecko 混淆、带宽留空即 BBR，以及 TLS、QUIC 和拨号字段。旧版 NekoBox 没有这些控件。
 - 路由：规则 / 分应用。
 - 更多：日志、设置（VPN / 仅代理、TUN 栈、MTU、IPv6、DNS、FakeDNS）、仪表板、备份恢复、规则集资源、关于。
-- 配置生成覆盖 VLESS（含 Reality）、VMess、Trojan、Shadowsocks、Hysteria2、Hysteria、TUIC、SOCKS、HTTP、WireGuard、AnyTLS、SSH、自定义 JSON、ByeDPI。
+- 配置生成覆盖 VLESS（含 Reality）、VMess、Trojan、Shadowsocks、Hysteria2（含 1.14 的端口跳跃、gecko 混淆、BBR 配置和 Realm）、Hysteria、TUIC、SOCKS、HTTP、WireGuard、AnyTLS、SSH、自定义 JSON、ByeDPI。
 - 分享链接与订阅：Clash Meta YAML（SnakeYAML `SafeConstructor`）、v2rayN Base64、sing-box outbound JSON、SIP008、WireGuard INI。
-- 深链：`sn://`、`clash://`、`ss`、`vmess`、`vless`、`trojan`、`hysteria2`、`hy2`、`tuic`、`anytls`。
+- 深链：`sn://`、`clash://`、`ss`、`vmess`、`vless`、`trojan`、`hysteria2`、`hy2`、`realm`、`tuic`、`anytls`。`realm+http://` 可以粘贴导入，Android 的 scheme 不能包含加号，所以没有单独的意图过滤器。
 - 快捷设置磁贴、开机自启（系统尚未授予 VPN 时只记日志）、订阅定期更新。
 
 界面文案默认简体中文（`values/strings.xml`），英文在 `values-en`。

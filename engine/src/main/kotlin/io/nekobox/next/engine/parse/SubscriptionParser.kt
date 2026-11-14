@@ -3,6 +3,8 @@ package io.nekobox.next.engine.parse
 import io.nekobox.next.engine.model.AnyTlsSpec
 import io.nekobox.next.engine.model.HttpSpec
 import io.nekobox.next.engine.model.Hysteria2Spec
+import io.nekobox.next.engine.model.clashHysteria2
+import io.nekobox.next.engine.model.hysteria2FromSingBox
 import io.nekobox.next.engine.model.ImportedNode
 import io.nekobox.next.engine.model.ParseBatch
 import io.nekobox.next.engine.model.ShadowsocksSpec
@@ -156,12 +158,7 @@ object SubscriptionParser {
             method = str(o, "method"),
             password = str(o, "password"),
         )
-        "hysteria2" -> Hysteria2Spec(
-            server = str(o, "server"),
-            serverPort = int(o, "server_port") ?: 443,
-            password = str(o, "password"),
-            serverName = nested(o, "tls", "server_name"),
-        )
+        "hysteria2" -> hysteria2FromSingBox(o)
         "tuic" -> TuicSpec(
             server = str(o, "server"),
             serverPort = int(o, "server_port") ?: 443,
@@ -269,14 +266,7 @@ object SubscriptionParser {
             serverName = m.s("sni"),
             fingerprint = m.s("client-fingerprint"),
         )
-        "hysteria2", "hy2" -> Hysteria2Spec(
-            server = m.s("server"),
-            serverPort = m.i("port"),
-            password = m.s("password"),
-            serverName = m.s("sni"),
-            obfs = (m["obfs"] as? String).orEmpty(),
-            obfsPassword = m.s("obfs-password"),
-        )
+        "hysteria2", "hy2" -> clashHysteria2(m)
         "tuic" -> TuicSpec(
             server = m.s("server"),
             serverPort = m.i("port"),

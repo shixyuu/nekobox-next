@@ -326,6 +326,8 @@ class ProfileRepository @Inject constructor(
 
     suspend fun findNode(id: String) = db.nodes().get(id)
 
+    suspend fun nodeChoices(): List<Pair<String, String>> = db.nodes().all().map { it.id to it.name }
+
     suspend fun deleteNode(id: String) = db.nodes().delete(id)
 
     suspend fun snapshotNodes(groupId: String) = db.nodes().inGroup(groupId)
@@ -340,7 +342,11 @@ class ProfileRepository @Inject constructor(
         is VmessSpec -> spec.server to spec.serverPort
         is TrojanSpec -> spec.server to spec.serverPort
         is io.nekobox.next.engine.model.ShadowsocksSpec -> spec.server to spec.serverPort
-        is Hysteria2Spec -> spec.server to spec.serverPort
+        is Hysteria2Spec -> if (spec.access != io.nekobox.next.engine.model.Hysteria2Access.DIRECT || spec.server.isBlank() || spec.serverPort !in 1..65535) {
+            null
+        } else {
+            spec.server to spec.serverPort
+        }
         is HysteriaSpec -> spec.server to spec.serverPort
         is TuicSpec -> spec.server to spec.serverPort
         is SocksSpec -> spec.server to spec.serverPort

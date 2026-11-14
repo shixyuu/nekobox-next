@@ -85,6 +85,8 @@ import io.nekobox.next.db.NodeEntity
 import io.nekobox.next.engine.config.formatRate
 import io.nekobox.next.engine.model.ByeDpiPresets
 import io.nekobox.next.engine.model.ByeDpiSpec
+import io.nekobox.next.engine.model.Hysteria2Check
+import io.nekobox.next.engine.model.Hysteria2Spec
 import io.nekobox.next.engine.model.NodeSpecs
 import io.nekobox.next.engine.model.PerAppMode
 import io.nekobox.next.engine.model.RouteRule
@@ -335,6 +337,16 @@ private fun EditorScreen(id: String?, nav: NavHostController) {
                 toggleableItem(checked = state.protocol == protocol, label = protocol, onCheckedChange = { vm.switch(protocol) })
             }
         }
+        if (state.protocol == "hysteria2") {
+            Hysteria2Editor(
+                spec = state.hysteria2,
+                name = state.name,
+                peers = state.peers,
+                selfId = state.id,
+                issues = state.issues,
+                onChange = vm::updateHy,
+            )
+        }
         if (state.protocol == "byedpi") {
             ByeDpiPresets.all.forEach { preset ->
                 TextButton(onClick = { vm.applyPreset(preset) }) {
@@ -348,7 +360,7 @@ private fun EditorScreen(id: String?, nav: NavHostController) {
                 }
             }
         }
-        state.fields.forEach { (key, value) ->
+        if (state.protocol != "hysteria2") state.fields.forEach { (key, value) ->
             if (key == "protocol" || key == "detourNodeId") return@forEach
             OutlinedTextField(
                 value = value,
@@ -667,6 +679,9 @@ data class EditorState(
     val fields: Map<String, String> = emptyMap(),
     val existing: Boolean = false,
     val groupId: String = "",
+    val hysteria2: Hysteria2Spec = Hysteria2Spec(),
+    val issues: List<String> = emptyList(),
+    val peers: List<Pair<String, String>> = emptyList(),
 )
 
 @HiltViewModel
@@ -675,8 +690,9 @@ class EditorViewModel @Inject constructor(private val repo: ProfileRepository) :
     fun load(id: String?) {
         viewModelScope.launch {
             val settings = repo.currentSettings()
+            val peers = repo.nodeChoices()
             if (id == null || id == "new" || id == "scan") {
-                state.value = fieldsOf("vless", "", settings.selectedGroupId.orEmpty(), false)
+                state.value = fieldsOf("vless", "", settings.selectedGroupId.orEmpty(), false).copy(peers = peers)
                 return@launch
             }
             val entity = repo.findNode(id) ?: return@launch
@@ -688,10 +704,21 @@ class EditorViewModel @Inject constructor(private val repo: ProfileRepository) :
                 fields = fields(NodeSpecs.toJsonObject(spec)),
                 existing = true,
                 groupId = entity.groupId,
+                hysteria2 = spec as? Hysteria2Spec ?: Hysteria2Spec(),
+                peers = peers,
             )
         }
     }
-    fun switch(protocol: String) { state.value = fieldsOf(protocol, state.value.name, state.value.groupId, state.value.existing).copy(id = state.value.id) }
+    fun switch(protocol: String) {
+        val cur = state.value
+        state.value = fieldsOf(protocol, cur.name, cur.groupId, cur.existing).copy(
+            id = cur.id,
+            peers = cur.peers,
+            hysteria2 = if (protocol == "hysteria2" && cur.protocol == "hysteria2") cur.hysteria2 else if (protocol == "hysteria2") Hysteria2Spec() else cur.hysteria2,
+            issues = emptyList(),
+        )
+    }
+    fun updateHy(spec: Hysteria2Spec) { state.value = state.value.copy(hysteria2 = spec, issues = emptyList()) }
     fun edit(key: String, value: String) { state.value = state.value.copy(fields = state.value.fields + (key to value)) }
     fun applyPreset(preset: String) {
         val args = ByeDpiPresets.args(preset, state.value.fields["rawArgs"].orEmpty())
@@ -699,6 +726,19 @@ class EditorViewModel @Inject constructor(private val repo: ProfileRepository) :
     }
     fun save(done: () -> Unit) {
         viewModelScope.launch {
+            if (state.value.protocol == "hysteria2") {
+                val spec = state.value.hysteria2
+                val issues = Hysteria2Check.issues(spec)
+                if (issues.isNotEmpty()) {
+                    state.value = state.value.copy(issues = issues)
+                    return@launch
+                }
+                val id = state.value.id.ifBlank { java.util.UUID.randomUUID().toString() }
+                val group = state.value.groupId.ifBlank { repo.currentSettings().selectedGroupId.orEmpty() }
+                repo.saveNode(id, group, state.value.name.ifBlank { "hysteria2" }, spec, null)
+                done()
+                return@launch
+            }
             val spec = NodeSpecs.fromJsonObject(buildJsonObject {
                 put("protocol", JsonPrimitive(state.value.protocol))
                 state.value.fields.forEach { (k, v) ->

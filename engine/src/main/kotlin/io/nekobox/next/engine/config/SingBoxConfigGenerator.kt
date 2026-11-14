@@ -9,6 +9,7 @@ import io.nekobox.next.engine.model.GeneratorSettings
 import io.nekobox.next.engine.model.GroupRecord
 import io.nekobox.next.engine.model.HttpSpec
 import io.nekobox.next.engine.model.Hysteria2Spec
+import io.nekobox.next.engine.model.toSingBoxOutbound
 import io.nekobox.next.engine.model.HysteriaSpec
 import io.nekobox.next.engine.model.NodeRecord
 import io.nekobox.next.engine.model.NodeSpec
@@ -191,21 +192,7 @@ object SingBoxConfigGenerator {
             if (spec.plugin.isNotBlank()) put("plugin", spec.plugin)
             if (spec.pluginOpts.isNotBlank()) put("plugin_opts", spec.pluginOpts)
         }
-        is Hysteria2Spec -> buildJsonObject {
-            put("type", "hysteria2")
-            put("server", spec.server)
-            put("server_port", spec.serverPort)
-            put("password", spec.password)
-            if (spec.upMbps > 0) put("up_mbps", spec.upMbps)
-            if (spec.downMbps > 0) put("down_mbps", spec.downMbps)
-            tls(this, true, spec.serverName.ifBlank { spec.server }, spec.insecure, spec.alpn, "", "", "")
-            if (spec.obfs.isNotBlank()) {
-                putJsonObject("obfs") {
-                    put("type", spec.obfs)
-                    put("password", spec.obfsPassword)
-                }
-            }
-        }
+        is Hysteria2Spec -> spec.toSingBoxOutbound()
         is HysteriaSpec -> buildJsonObject {
             put("type", "hysteria")
             put("server", spec.server)

@@ -2,7 +2,7 @@ package io.nekobox.next.engine.parse
 
 import io.nekobox.next.engine.model.AnyTlsSpec
 import io.nekobox.next.engine.model.HttpSpec
-import io.nekobox.next.engine.model.Hysteria2Spec
+import io.nekobox.next.engine.model.Hysteria2Links
 import io.nekobox.next.engine.model.HysteriaSpec
 import io.nekobox.next.engine.model.ImportedNode
 import io.nekobox.next.engine.model.ShadowsocksSpec
@@ -32,7 +32,7 @@ object ShareLinkParser {
             "vmess" -> parseVmess(line)
             "trojan" -> parseTrojan(line)
             "ss" -> parseShadowsocks(line)
-            "hysteria2", "hy2" -> parseHysteria2(line)
+            "hysteria2", "hy2", "realm", "realm+http" -> Hysteria2Links.parse(line)
             "hysteria" -> parseHysteria(line)
             "tuic" -> parseTuic(line)
             "socks", "socks5" -> parseSocks(line)
@@ -120,22 +120,6 @@ object ShareLinkParser {
                 insecure = p.query["allowInsecure"] == "1",
                 alpn = p.query["alpn"].orEmpty(),
                 fingerprint = p.query["fp"].orEmpty(),
-            ),
-        )
-    }
-
-    private fun parseHysteria2(line: String) = authorityNode(line) { p ->
-        ImportedNode(
-            p.name,
-            Hysteria2Spec(
-                server = p.host,
-                serverPort = p.port,
-                password = decode(p.user),
-                serverName = p.query["sni"].orEmpty(),
-                insecure = p.query["insecure"] == "1",
-                alpn = p.query["alpn"].orEmpty(),
-                obfs = p.query["obfs"].orEmpty(),
-                obfsPassword = p.query["obfs-password"].orEmpty(),
             ),
         )
     }
