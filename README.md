@@ -29,7 +29,7 @@ core/mobile   Go：gomobile 入口，调用官方 libbox，并拉起 ByeDPI
 
 ## 本地构建
 
-需要 JDK 17 或更高（本机用 21 编译、目标字节码 17）、Android SDK（已验证 API 37 与 Build-Tools 36）、以及构建 AAR 时的 Go 1.25.5 与 gomobile。
+需要 JDK 17 或更高（本机用 21 编译、目标字节码 17）、Android SDK（已验证 API 37 与 Build-Tools 36）、以及构建 AAR 时的 Go 1.26.0、NDK 与 gomobile。
 
 ```bash
 export ANDROID_HOME="$HOME/android-sdk"
@@ -42,7 +42,7 @@ export ANDROID_HOME="$HOME/android-sdk"
 `scripts/build-core.sh` 固定：
 
 - sing-box `v1.14.4`（`core/mobile/go.mod` 的 require，没有指向仓库外的 replace）
-- Go `1.25.5`（sing-box 1.14.4 的 `go` 行；脚本发现本机更旧时会下载）
+- Go `1.26.0`（钉住的 gomobile 声明 `go 1.26.0`，且 `gomobile bind` 要把 `golang.org/x/mobile` 放进模块图。sing-box 1.14.4 自己的 `go` 行仍是 1.25.5。脚本发现本机更旧时会下载 1.26.0）
 - gomobile `v0.0.0-20261011034528-197770444867`
 
 没有 AAR 时，调试包仍能编译。`VpnService` 会建立 TUN 并读掉数据包，但 **不会转发**。日志里会写「核心未链接」。装上 AAR 之后，Gradle 改用 `src/coreAar`，由 libbox 通过 `OpenTun` 拿走同一个 fd。
@@ -71,6 +71,6 @@ Kotlin 使用 2.4.21。AGP 9 自带 Kotlin 插件，应用模块不再单独应�
 - `./gradlew :engine:test` 通过。覆盖分享链接、Clash YAML、Base64、sing-box JSON、SIP008、WireGuard INI、配置生成（Reality、ByeDPI detour、混合入站账号、IPv6 关闭、JSON 合并）和备份往返。
 - `./gradlew assembleDebug` 通过，产出按 ABI 拆分的 debug APK。没有连接 AAR，所以这个包里的 TUN 不会转发。没有模拟器，Compose 界面没有截图。
 
-`core/mobile` 对照的是 sing-box v1.14.4 的 libbox 源码（`Setup`、`NewCommandServer`、`PlatformInterface`、`TunOptions`）。本机 Go 是 1.22，编不了声明 `go 1.25.5` 的 sing-box 模块，所以 AAR 没有在这里生成。脚本会在 Go 过旧时自行安装 1.25.5。
+`core/mobile` 对照的是 sing-box v1.14.4 的 libbox 源码（`Setup`、`NewCommandServer`、`PlatformInterface`、`TunOptions`）。`./scripts/build-core.sh` 打出 `app/libs/nekocore.aar` 之后，调试包会改用 `src/coreAar`，由 libbox 通过 `OpenTun` 拿走同一个 fd。链接参数带 `-checklinkname=0`，和上游 `build_libbox` 一样，否则 `os.checkPidfdOnce` 的 linkname 过不了 Go 1.26 的链接器。Java 包名是 `io.nekobox.next.corelib.mobile`：`native` 是 Java 关键字，不能放进包名。
 
-AAR 需要 Go 1.25.5、NDK 和完整的 sing-box 依赖图（含 gVisor）。脚本会在缺这些东西时直接失败并打印缺什么，而不是静默打出一个空包。
+AAR 需要 Go 1.26.0、NDK 和完整的 sing-box 依赖图（含 gVisor）。脚本会在 Go 过旧时自行安装 1.26.0。NDK 仍要事先放在 `ANDROID_HOME/ndk`。缺 SDK 时脚本直接失败并打印缺什么，而不是静默打出一个空包。

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Build the official sing-box libbox plus the in-repo ByeDPI engine into an Android AAR.
-# Pins: sing-box v1.14.4, Go 1.25.5, gomobile v0.0.0-20261011034528-197770444867.
+# Pins: sing-box v1.14.4, Go 1.26.0, gomobile v0.0.0-20261011034528-197770444867.
+# sing-box 1.14.4's own go line is 1.25.5. This gomobile revision declares go 1.26.0
+# and `gomobile bind` refuses to run unless golang.org/x/mobile is in the module
+# graph, which a Go 1.25 toolchain with GOTOOLCHAIN=local will not load.
 set -euo pipefail
 
 SING_BOX_VERSION=v1.14.4
-GO_VERSION=1.25.5
+GO_VERSION=1.26.0
 GOMOBILE_VERSION=v0.0.0-20261011034528-197770444867
 ANDROID_API=26
 # Tags from sing-box release/DEFAULT_BUILD_TAGS_OTHERS, without with_usbip
@@ -24,7 +27,7 @@ go_is_new_enough() {
   command -v go >/dev/null 2>&1 || return 1
   local have
   have="$(go env GOVERSION | sed 's/^go//')"
-  # sing-box 1.14.4 declares go 1.25.5 in its go.mod.
+  # The pinned gomobile module requires Go 1.26.0. sing-box 1.14.4 allows 1.25.5 or newer.
   python3 - <<PY
 have = tuple(int(x) for x in "$have".split(".")[:3])
 need = tuple(int(x) for x in "$GO_VERSION".split("."))
@@ -33,7 +36,7 @@ PY
 }
 
 if ! go_is_new_enough; then
-  echo "Installing Go ${GO_VERSION} (current toolchain is too old for sing-box ${SING_BOX_VERSION})."
+  echo "Installing Go ${GO_VERSION} (current toolchain is too old for gomobile ${GOMOBILE_VERSION})."
   tmp="$(mktemp -d)"
   curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o "$tmp/go.tgz"
   rm -rf "$HOME/sdk/go${GO_VERSION}"
@@ -50,15 +53,37 @@ cd "$ROOT/core/mobile"
 go mod download
 
 export PATH="$(go env GOPATH)/bin:$PATH"
+# `gomobile bind` loads golang.org/x/mobile/bind from this module. A tool
+# directive keeps that module in the graph across `go mod tidy`.
+go get -tool "golang.org/x/mobile/cmd/gobind@${GOMOBILE_VERSION}"
 go install "golang.org/x/mobile/cmd/gomobile@${GOMOBILE_VERSION}"
 go install "golang.org/x/mobile/cmd/gobind@${GOMOBILE_VERSION}"
 gomobile init
 
 mkdir -p "$ROOT/app/libs"
+# gomobile bind compiles every ABI at once. Each c-shared link of sing-box
+# (gVisor included) is large enough that four of them together get OOM-killed
+# on a 16 GB machine. Serialize only those links.
+real_go="$(command -v go)"
+wrap="$(mktemp -d)"
+cat > "$wrap/go" <<EOF
+#!/usr/bin/env bash
+if [[ " \$* " == *" -buildmode=c-shared "* ]]; then
+  exec flock "$wrap/cshared.lock" "$real_go" "\$@"
+else
+  exec "$real_go" "\$@"
+fi
+EOF
+chmod +x "$wrap/go"
+export PATH="$wrap:$PATH"
+
+# Same linker flags as sing-box cmd/internal/build_shared.LinkerFlags.
+# -checklinkname=0 is required: libbox linknames os.checkPidfdOnce.
 gomobile bind \
   -target=android \
   -androidapi "$ANDROID_API" \
-  -javapkg=io.nekobox.next.native \
+  -javapkg=io.nekobox.next.corelib \
+  -ldflags "-X github.com/sagernet/sing-box/constant.Version=${SING_BOX_VERSION} -X runtime.godebugDefault=multipathtcp=0,tlssha1=1 -checklinkname=0 -s -w -buildid=" \
   -o "$OUT" \
   -tags "$BUILD_TAGS" \
   .
