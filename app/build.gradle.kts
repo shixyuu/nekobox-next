@@ -35,16 +35,37 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildTypes {
+        // Release-shaped, debug-signed. Used for the size-capped preview channel.
+        create("preview") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+    }
+
     splits {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
-            isUniversalApk = true
+            // Default core build is arm64 (phone) and x86_64 (emulator).
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = false
         }
     }
 
     packaging {
+        jniLibs {
+            // Store libgojni.so deflated. Uncompressed it is far past the 25 MB cap.
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "META-INF/DEPENDENCIES"

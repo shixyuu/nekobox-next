@@ -35,9 +35,14 @@ core/mobile   Go：gomobile 入口，调用官方 libbox，并拉起 ByeDPI
 export ANDROID_HOME="$HOME/android-sdk"
 ./scripts/build-core.sh          # 产出 app/libs/nekocore.aar，版本钉在脚本顶部
 ./gradlew assembleDebug
+./gradlew assemblePreview        # arm64 与 x86_64 各一个，R8 + 压缩 so，debug 签名
 ./gradlew :engine:test
 ( cd core && go test ./byedpi/ )
 ```
+
+`preview` 是给分发通道用的构建类型：打开 R8 和资源压缩，`libgojni.so` 以旧式压缩方式打进 APK，签名用 debug。默认核心只编 `android/arm64` 和 `android/amd64`，所以 `assemblePreview` 得到 `app-arm64-v8a-preview.apk` 和 `app-x86_64-preview.apk`。四个 ABI 用 `NEKOCORE_TARGETS=android ./scripts/build-core.sh`，并自行把 `splits.abi.include` 改回包含 `armeabi-v7a` 和 `x86`。
+
+构建标签只留界面和配置生成器用到的：`with_gvisor`、`with_quic`、`with_wireguard`、`with_utls`、`with_clash_api`，外加链接必需的 `badlinkname`、`tfogo_checklinkname0`。Tailscale、ACME、DHCP DNS、Cloudflare Tunnel、CCM、OCM 没有入口，不打进核心。链接参数是 `-trimpath` 和 `-ldflags "-s -w -buildid= -checklinkname=0"`。
 
 `scripts/build-core.sh` 固定：
 

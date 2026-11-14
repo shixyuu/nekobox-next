@@ -10,9 +10,14 @@ SING_BOX_VERSION=v1.14.4
 GO_VERSION=1.26.0
 GOMOBILE_VERSION=v0.0.0-20261011034528-197770444867
 ANDROID_API=26
-# Tags from sing-box release/DEFAULT_BUILD_TAGS_OTHERS, without with_usbip
-# (that tag pulls platform code we do not ship on Android).
-BUILD_TAGS="with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_ocm,with_cloudflared,badlinkname,tfogo_checklinkname0"
+# Tags that back a feature this app actually generates or shows in the UI:
+# gVisor TUN stack, Hysteria/TUIC QUIC, WireGuard, uTLS fingerprints, Clash API.
+# badlinkname and tfogo_checklinkname0 keep the Android pidfd/TFO linknames working.
+# Not included, because nothing in the UI or the config generator uses them:
+# with_tailscale, with_acme, with_dhcp, with_cloudflared, with_ccm, with_ocm.
+BUILD_TAGS="with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0"
+# Phone preview is arm64. The emulator retest is x86_64. Set NEKOCORE_TARGETS=android for all four ABIs.
+TARGETS="${NEKOCORE_TARGETS:-android/arm64,android/amd64}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/app/libs/nekocore.aar"
@@ -80,10 +85,11 @@ export PATH="$wrap:$PATH"
 # Same linker flags as sing-box cmd/internal/build_shared.LinkerFlags.
 # -checklinkname=0 is required: libbox linknames os.checkPidfdOnce.
 gomobile bind \
-  -target=android \
+  -target="$TARGETS" \
   -androidapi "$ANDROID_API" \
   -javapkg=io.nekobox.next.corelib \
-  -ldflags "-X github.com/sagernet/sing-box/constant.Version=${SING_BOX_VERSION} -X runtime.godebugDefault=multipathtcp=0,tlssha1=1 -checklinkname=0 -s -w -buildid=" \
+  -trimpath \
+  -ldflags "-s -w -buildid= -checklinkname=0 -X github.com/sagernet/sing-box/constant.Version=${SING_BOX_VERSION} -X runtime.godebugDefault=multipathtcp=0,tlssha1=1" \
   -o "$OUT" \
   -tags "$BUILD_TAGS" \
   .
