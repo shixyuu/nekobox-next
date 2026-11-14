@@ -1,0 +1,22 @@
+{
+  "outbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-a",
+      "server": "192.0.2.10",
+      "server_port": 443,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "cGFzcw=="
+    },
+    {
+      "type": "socks",
+      "tag": "socks-a",
+      "server": "192.0.2.11",
+      "server_port": 1080,
+      "version": "5",
+      "username": "u",
+      "password": "p"
+    },
+    {"type": "direct", "tag": "direct"}
+  ]
+}
